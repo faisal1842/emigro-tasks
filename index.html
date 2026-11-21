@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Emigro Team Tasks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --navy:#0A2470;--blue:#1A56D6;--orange:#FF7A1A;--yellow:#FFD23F;
+  --green:#16A34A;--red:#EF3B3B;--bg:#F3F6FC;--card:#fff;--line:#E2E8F3;
+  --text:#14213D;--muted:#6B7A99;--radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Hind Siliguri',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+button,input,select,textarea{font-family:inherit;font-size:15px}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+/* header */
+header{background:linear-gradient(120deg,var(--navy),var(--blue));color:#fff;padding:14px 16px calc(14px);padding-top:calc(14px + env(safe-area-inset-top));position:sticky;top:0;z-index:20}
+.hrow{display:flex;align-items:center;justify-content:space-between;max-width:960px;margin:0 auto;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:38px;height:38px;border-radius:10px;background:#fff;display:grid;place-items:center;font-weight:700;color:var(--navy);font-size:20px;position:relative}
+.logo::after{content:"";position:absolute;right:5px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--orange)}
+.brand b{font-size:18px;display:block;line-height:1.1}
+.brand small{opacity:.8;font-size:12px}
+.me{display:flex;align-items:center;gap:8px;font-size:14px}
+.me button{white-space:nowrap;background:rgba(255,255,255,.15);border:0;color:#fff;padding:6px 10px;border-radius:8px}
+@media(max-width:420px){.hide-sm{display:none}}
+.demo{background:var(--yellow);color:var(--navy);font-size:12px;text-align:center;padding:5px 10px;font-weight:600}
+
+main{max-width:960px;margin:0 auto;padding:16px 14px 110px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(10,36,112,.06);border:1px solid var(--line);padding:16px;margin-bottom:14px}
+h2{font-size:20px;color:var(--navy);margin-bottom:10px}
+h3{font-size:16px;color:var(--navy)}
+.muted{color:var(--muted);font-size:13px}
+
+/* nav */
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;gap:4px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:20}
+nav button{flex:1;max-width:160px;background:none;border:0;padding:6px;border-radius:10px;color:var(--muted);font-weight:600;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button span{font-size:20px;position:relative}
+nav button span em{position:absolute;top:-4px;right:-10px;background:var(--red);color:#fff;font-style:normal;font-size:11px;font-weight:700;border-radius:10px;padding:0 5px;line-height:17px}
+.notice{background:#FFF7EC;border:1px solid #FFD3AE}
+.notice h3{color:#C2570A}
+.newtag{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.btn.wa{background:#1FAF54;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.bell{background:#EAF0FD;border:1px solid #BFD1F7;border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;margin-bottom:14px;font-size:14px}
+nav button.on{color:var(--blue);background:#EAF0FD}
+
+.fab{position:fixed;right:18px;bottom:calc(78px + env(safe-area-inset-bottom));background:var(--orange);color:#fff;border:0;border-radius:30px;padding:13px 20px;font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(255,122,26,.45);z-index:21}
+
+/* buttons/forms */
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:600;background:var(--blue);color:#fff}
+.btn.o{background:var(--orange)}
+.btn.g{background:#EEF2F9;color:var(--navy)}
+.btn.r{background:#FDECEC;color:var(--red)}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn:disabled{opacity:.5}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 5px;color:var(--navy)}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--text)}
+input:focus,select:focus,textarea:focus{outline:2px solid #BFD1F7;border-color:var(--blue)}
+textarea{resize:vertical;min-height:60px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.seg{display:flex;background:#EEF2F9;border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;padding:7px 10px;border-radius:8px;font-weight:600;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--blue);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.err{color:var(--red);font-size:13px;margin-top:8px;min-height:18px}
+
+/* date bar */
+.datebar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.datebar .d{flex:1;text-align:center}
+.datebar .d b{font-size:18px;color:var(--navy);display:block}
+.icon{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:18px;color:var(--navy)}
+.progress{height:10px;background:#EEF2F9;border-radius:6px;overflow:hidden;margin-top:6px}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#4ADE80);border-radius:6px;transition:width .3s}
+
+/* task rows */
+.group{margin-top:14px}
+.ghead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.av{width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:700;flex:none;font-size:15px;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.task{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:#fff}
+.task.done{background:#F0FBF4;border-color:#BBE7CB}
+.task.done .tt{text-decoration:line-through;color:var(--muted)}
+.chk{width:28px;height:28px;border-radius:8px;border:2px solid #B8C4DB;background:#fff;flex:none;display:grid;place-items:center;font-size:16px;color:#fff}
+.task.done .chk{background:var(--green);border-color:var(--green)}
+.chk:disabled{cursor:not-allowed;opacity:.6}
+.tt{font-weight:600}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-right:4px}
+.b-daily{background:#EAF0FD;color:var(--blue)}
+.b-weekly{background:#FFF1E6;color:#C2570A}
+.b-monthly{background:#F1EAFE;color:#6D28D9}
+.b-once{background:#EEF2F9;color:var(--navy)}
+.tactions{display:flex;gap:4px;margin-left:auto}
+.tactions button{border:0;background:#F3F6FC;border-radius:8px;width:32px;height:32px;font-size:14px}
+.empty{text-align:center;padding:30px 10px;color:var(--muted)}
+
+/* report */
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.rep{border-collapse:collapse;font-size:13px;min-width:100%}
+.rep th,.rep td{border-bottom:1px solid var(--line);padding:6px 4px;text-align:center;white-space:nowrap}
+.rep th{color:var(--muted);font-weight:600;font-size:12px}
+.rep td.name,.rep th.name{text-align:left;position:sticky;left:0;background:#fff;min-width:150px;max-width:200px;white-space:normal;padding-left:2px}
+.rep th.today{color:var(--orange)}
+.c-ok{color:var(--green);font-weight:700}
+.c-miss{color:var(--red);font-weight:700}
+.c-up{color:#B8C4DB}
+.c-na{color:#E2E8F3}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center}
+.stat b{font-size:22px;color:var(--navy)}
+
+/* team */
+.member{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.member:last-child{border:0}
+.role{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#FFF1E6;color:#C2570A}
+.role.m{background:#EAF0FD;color:var(--blue)}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(10,36,112,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.sheet{background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+@media(min-width:640px){.modal{align-items:center}.sheet{border-radius:18px}}
+.days{display:flex;gap:6px;flex-wrap:wrap}
+.days button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;font-weight:600;color:var(--muted)}
+.days button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* login */
+.center{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,var(--navy),var(--blue))}
+.login{width:100%;max-width:400px}
+.login .brand{justify-content:center;color:#fff;margin-bottom:18px}
+.pick{display:flex;align-items:center;gap:12px;width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;margin-bottom:8px;text-align:left}
+.pick.on{border-color:var(--blue);background:#EAF0FD}
+.pin{letter-spacing:10px;text-align:center;font-size:24px;font-weight:700}
+.toast{position:fixed;left:50%;bottom:140px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;z-index:60;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+/* =========================================================
+   ১) FIREBASE CONFIG — Firebase Console থেকে কপি করে এখানে বসান।
+   খালি থাকলে অ্যাপ "ডেমো মোডে" চলে (শুধু এই ব্রাউজারে সেভ হয়)।
+   ========================================================= */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAZC88xkxKshqUW1Iz8-pQiw63w-FZvn7Q",
+  authDomain: "emigro-tasks.firebaseapp.com",
+  projectId: "emigro-tasks",
+  storageBucket: "emigro-tasks.firebasestorage.app",
+  messagingSenderId: "99781298035",
+  appId: "1:99781298035:web:56b6e127fd6d2383a76706"
+};
+const APP_NAME = "Emigro Team Tasks";
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const BN = "০১২৩৪৫৬৭৮৯";
+const bn = n => String(n).replace(/\d/g, d => BN[d]);
+const WD = ["রবি","সোম","মঙ্গল","বুধ","বৃহঃ","শুক্র","শনি"];
+const WDF = ["রবিবার","সোমবার","মঙ্গলবার","বুধবার","বৃহস্পতিবার","শুক্রবার","শনিবার"];
+const MON = ["জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"];
+const TYPE = {daily:"প্রতিদিন",weekly:"সাপ্তাহিক",monthly:"মাসিক",once:"একবার"};
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate()+n); return ymd(d); };
+const today = () => ymd(new Date());
+const nice = s => { const d = parse(s); return `${WDF[d.getDay()]}, ${bn(d.getDate())} ${MON[d.getMonth()]}`; };
+const initials = n => (n||"?").trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); }
+async function hashPin(pin, salt){
+  const data = new TextEncoder().encode(salt + ":" + pin + ":emigro");
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+/* ---------------- does a task fall on a date? ---------------- */
+function occurs(t, ds){
+  if (t.start && ds < t.start) return false;
+  if (t.end && ds > t.end) return false;
+  const d = parse(ds);
+  switch (t.type) {
+    case "daily":   return true;
+    case "weekly":  return (t.wd || []).includes(d.getDay());
+    case "monthly": {
+      const last = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+      return d.getDate() === Math.min(t.md || 1, last); // ৩১ তারিখ ছোট মাসে শেষ দিনে
+    }
+    case "once":    return t.date === ds;
+  }
+  return false;
+}
+
+/* ---------------- data store (Firebase or demo) ---------------- */
+const COLS = ["people","tasks","done"];
+const Store = {
+  data:{people:[],tasks:[],done:[]}, loaded:0, demo:false, db:null,
+  init(onChange){
+    this.onChange = onChange;
+    if (FIREBASE_CONFIG && FIREBASE_CONFIG.projectId) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      this.db = firebase.firestore();
+      COLS.forEach(c => this.db.collection(c).onSnapshot(s => {
+        this.data[c] = s.docs.map(d => ({id:d.id, ...d.data()}));
+        if (!this["_l"+c]) { this["_l"+c]=1; this.loaded++; }
+        this.onChange();
+      }, e => { console.error(e); toast("ডেটাবেস কানেকশনে সমস্যা"); }));
+    } else {
+      this.demo = true; this.load(); this.loaded = COLS.length;
+      window.addEventListener("storage", e => { if (e.key==="mtb_demo") { this.load(); this.onChange(); } });
+      setTimeout(()=>this.onChange());
+    }
+  },
+  get ready(){ return this.loaded >= COLS.length; },
+  load(){ try { const j = JSON.parse(localStorage.getItem("mtb_demo")||"{}"); COLS.forEach(c=>this.data[c]=j[c]||[]); } catch(e){} },
+  save(){ try { localStorage.setItem("mtb_demo", JSON.stringify(this.data)); } catch(e){} this.onChange(); },
+  async set(col, id, obj){
+    if (this.demo){ const a=this.data[col]; const i=a.findIndex(x=>x.id===id); const v={id,...obj}; i>=0?a[i]=v:a.push(v); this.save(); return; }
+    await this.db.collection(col).doc(id).set(obj);
+  },
+  async update(col, id, patch){
+    if (this.demo){ const o=this.data[col].find(x=>x.id===id); if(o) Object.assign(o,patch); this.save(); return; }
+    await this.db.collection(col).doc(id).update(patch);
+  },
+  async remove(col, id){
+    if (this.demo){ this.data[col]=this.data[col].filter(x=>x.id!==id); this.save(); return; }
+    await this.db.collection(col).doc(id).delete();
+  }
+};
+
+/* ---------------- app state ---------------- */
+const S = { tab:"today", date:today(), filter:"all", repMode:"week", repAnchor:today(), repPerson:"all", loginPick:null };
+const me = () => Store.data.people.find(p => p.id === localStorage.getItem("mtb_me"));
+const isAdmin = () => me()?.role === "admin";
+const person = id => Store.data.people.find(p => p.id === id);
+const doneRec = (tid, ds) => Store.data.done.find(d => d.id === tid + "_" + ds);
+const avatar = p => `<div class="av" style="background:${p?.role==="admin"?"var(--orange)":"var(--blue)"}">${p?.photo?`<img src="${p.photo}" alt="">`:esc(initials(p?.name))}</div>`;
+/* ---- notifications ---- */
+const seenAt = () => me()?.seenAt || me()?.created || 0;
+const newTasks = () => { const m=me(); if(!m) return []; const s=seenAt();
+  return Store.data.tasks.filter(t=>t.assigneeId===m.id && t.assignerId!==m.id && (t.created||0)>s).sort((a,b)=>b.created-a.created); };
+async function markSeen(){ const m=me(); if(!m) return; await Store.update("people", m.id, {seenAt:Date.now()}); }
+const notifOK = () => "Notification" in window && Notification.permission==="granted";
+async function askNotif(){
+  if(!("Notification" in window)) return toast("এই ব্রাউজারে নোটিফিকেশন সাপোর্ট নেই");
+  try{ const r=await Notification.requestPermission(); toast(r==="granted"?"নোটিফিকেশন চালু হয়েছে 🔔":"নোটিফিকেশন বন্ধ রাখা হয়েছে"); }catch(e){}
+  render();
+}
+let notified = null; // task ids already alerted on this device
+function checkAlerts(){
+  const m=me(); if(!m||!Store.ready) return;
+  const list=newTasks();
+  if(notified===null){ notified=new Set(list.map(t=>t.id)); }
+  else for(const t of list){ if(notified.has(t.id)) continue; notified.add(t.id);
+    const by=person(t.assignerId)?.name||"Admin";
+    toast("🔔 নতুন টাস্ক: "+t.title);
+    try{ navigator.vibrate&&navigator.vibrate([150,80,150]); }catch(e){}
+    if(notifOK()) try{ new Notification("নতুন টাস্ক — "+APP_NAME,{body:t.title+"\n"+by+" দিয়েছেন",tag:t.id}); }catch(e){}
+  }
+  const n=list.length; document.title=(n?`(${n}) `:"")+APP_NAME;
+}
+function waLink(p, t){
+  let ph=String(p?.phone||"").replace(/\D/g,""); if(!ph) return null;
+  if(ph.startsWith("0")) ph="88"+ph; else if(ph.length===10&&ph.startsWith("1")) ph="880"+ph;
+  const sched = t.type==="weekly"?"প্রতি "+(t.wd||[]).map(i=>WDF[i]).join(", "):t.type==="monthly"?"প্রতি মাসের "+bn(t.md)+" তারিখ":t.type==="once"?nice(t.date):"প্রতিদিন";
+  const url = /^https?:/.test(location.href)&&!location.href.includes("claude.ai")?"\nঅ্যাপে দেখুন: "+location.href.split("#")[0]:"";
+  const msg = `🔔 আপনাকে নতুন টাস্ক দেওয়া হয়েছে\n\n📌 ${t.title}\n🗓 ${t.type==="daily"?"প্রতিদিন":TYPE[t.type]+" — "+sched}${t.note?"\n📝 "+t.note:""}${url}`;
+  return "https://wa.me/"+ph+"?text="+encodeURIComponent(msg);
+}
+const sortedPeople = () => [...Store.data.people].sort((a,b)=> (a.role==="admin"?0:1)-(b.role==="admin"?0:1) || a.name.localeCompare(b.name));
+
+/* ---------------- render ---------------- */
+function render(){
+  const app = $("#app");
+  if (!Store.ready){ app.innerHTML = `<div class="center"><div style="color:#fff">লোড হচ্ছে…</div></div>`; return; }
+  if (!Store.data.people.length) return renderSetup();
+  if (!me()) return renderLogin();
+  const a = isAdmin();
+  if (!a && S.tab === "team") S.tab = "today";
+  app.innerHTML = `
+    <header><div class="hrow">
+      <div class="brand"><div class="logo">E</div><div><b>${esc(APP_NAME)}</b><small>Emigro Global</small></div></div>
+      <div class="me">${avatar(me())}<b class="hide-sm">${esc(me().name)}</b><button onclick="logout()">বের হন</button></div>
+    </div></header>
+    ${Store.demo?`<div class="demo">ডেমো মোড — ডেটা শুধু এই ব্রাউজারে সেভ হচ্ছে। Firebase যুক্ত করলে সবার কাছে দেখাবে।</div>`:""}
+    <main id="view"></main>
+    ${a?`<button class="fab" onclick="openTask()">+ টাস্ক দিন</button>`:""}
+    <nav>
+      <button class="${S.tab==="today"?"on":""}" onclick="go('today')"><span>📋${newTasks().length?`<em>${bn(newTasks().length)}</em>`:""}</span>টাস্ক</button>
+      <button class="${S.tab==="report"?"on":""}" onclick="go('report')"><span>📊</span>রিপোর্ট</button>
+      ${a?`<button class="${S.tab==="team"?"on":""}" onclick="go('team')"><span>👥</span>টিম</button>`:""}
+    </nav>`;
+  ({today:viewToday, report:viewReport, team:viewTeam})[S.tab]();
+}
+function go(t){ S.tab=t; render(); window.scrollTo(0,0); }
+
+/* ---- setup (first admin) ---- */
+function renderSetup(){
+  $("#app").innerHTML = `<div class="center"><div class="login">
+    <div class="brand"><div class="logo">E</div><div><b>${esc(APP_NAME)}</b><small>প্রথমবার সেটআপ</small></div></div>
+    <div class="card">
+      <h2>Admin অ্যাকাউন্ট খুলুন</h2>
+      <p class="muted">আপনি Admin — শুধু আপনিই টাস্ক দিতে, বদলাতে ও টিম ম্যানেজ করতে পারবেন।</p>
+      <label>নাম</label><input id="sName" placeholder="যেমন: Faisal">
+      <label>পদবি</label><input id="sDes" placeholder="যেমন: Managing Director">
+      <label>৪ সংখ্যার PIN</label><input id="sPin" class="pin" inputmode="numeric" maxlength="4" type="password">
+      <div class="err" id="sErr"></div>
+      <button class="btn o" style="width:100%" onclick="doSetup()">শুরু করুন</button>
+    </div></div></div>`;
+}
+async function doSetup(){
+  const name=$("#sName").value.trim(), des=$("#sDes").value.trim(), pin=$("#sPin").value.trim();
+  if(!name) return $("#sErr").textContent="নাম লিখুন";
+  if(!/^\d{4}$/.test(pin)) return $("#sErr").textContent="PIN ৪ সংখ্যার হতে হবে";
+  if(Store.data.people.length) return render();
+  const id=uid();
+  await Store.set("people", id, {name, des, role:"admin", pin:await hashPin(pin,id), created:Date.now()});
+  localStorage.setItem("mtb_me", id); toast("স্বাগতম, "+name+"!"); render();
+}
+
+/* ---- login ---- */
+function renderLogin(){
+  const ps = sortedPeople();
+  $("#app").innerHTML = `<div class="center"><div class="login">
+    <div class="brand"><div class="logo">E</div><div><b>${esc(APP_NAME)}</b><small>Emigro Global</small></div></div>
+    <div class="card">
+      <h2>আপনি কে?</h2>
+      ${ps.map(p=>`<button class="pick ${S.loginPick===p.id?"on":""}" onclick="S.loginPick='${p.id}';renderLogin();setTimeout(()=>$('#lPin')?.focus())">${avatar(p)}<div><b>${esc(p.name)}</b><div class="muted">${esc(p.des||"")}</div></div></button>`).join("")}
+      ${S.loginPick?`<label>PIN দিন</label><input id="lPin" class="pin" inputmode="numeric" maxlength="4" type="password" oninput="if(this.value.length===4)doLogin()">
+      <div class="err" id="lErr"></div><button class="btn" style="width:100%" onclick="doLogin()">ঢুকুন</button>`:""}
+    </div></div></div>`;
+}
+async function doLogin(){
+  const p = person(S.loginPick); const pin=$("#lPin").value.trim();
+  if(!p) return;
+  if(await hashPin(pin,p.id)!==p.pin){ $("#lErr").textContent="PIN ভুল হয়েছে"; $("#lPin").value=""; return; }
+  localStorage.setItem("mtb_me", p.id); notified=null; checkAlerts(); S.loginPick=null; S.tab="today"; render();
+}
+function logout(){ localStorage.removeItem("mtb_me"); notified=null; document.title=APP_NAME; S.loginPick=null; render(); }
+
+/* ---- today ---- */
+function canTick(t){ const m=me(); return m && (m.role==="admin" || t.assigneeId===m.id); }
+function viewToday(){
+  const a=isAdmin(), m=me(), ds=S.date;
+  let list = Store.data.tasks.filter(t=>occurs(t,ds));
+  if(!a) list = list.filter(t=>t.assigneeId===m.id);
+  else if(S.filter!=="all") list = list.filter(t=>t.assigneeId===S.filter);
+  const doneN = list.filter(t=>doneRec(t.id,ds)).length;
+  const pct = list.length ? Math.round(doneN*100/list.length) : 0;
+  const groups = sortedPeople().map(p=>({p, items:list.filter(t=>t.assigneeId===p.id)})).filter(g=>g.items.length);
+  const orphan = list.filter(t=>!person(t.assigneeId));
+  if(orphan.length) groups.push({p:{name:"(মুছে ফেলা মেম্বার)"}, items:orphan});
+  const nt = newTasks();
+  const bell = ("Notification" in window) && Notification.permission==="default" && !a;
+  $("#view").innerHTML = `
+    ${bell?`<div class="bell">🔔<div class="grow">নতুন টাস্ক পেলে নোটিফিকেশন পেতে চালু করুন</div><button class="btn sm" onclick="askNotif()">চালু করুন</button></div>`:""}
+    ${nt.length?`<div class="card notice"><div class="row"><h3 class="grow">🔔 আপনাকে নতুন ${bn(nt.length)}টি টাস্ক দেওয়া হয়েছে</h3><button class="btn o sm" onclick="markSeen()">দেখেছি ✓</button></div>
+      ${nt.map(t=>`<div style="margin-top:8px"><b>${esc(t.title)}</b> <span class="badge b-${t.type}">${TYPE[t.type]}</span><div class="muted">${esc(person(t.assignerId)?.name||"")} দিয়েছেন · ${new Date(t.created).toLocaleString("bn-BD",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})}</div></div>`).join("")}</div>`:""}
+    <div class="card">
+      <div class="datebar">
+        <button class="icon" onclick="S.date=addDays(S.date,-1);render()">‹</button>
+        <div class="d"><b>${ds===today()?"আজ — ":""}${nice(ds)}</b>
+          <input type="date" value="${ds}" onchange="S.date=this.value||today();render()" style="width:auto;padding:3px 8px;font-size:13px;margin-top:4px"></div>
+        <button class="icon" onclick="S.date=addDays(S.date,1);render()">›</button>
+      </div>
+      <div class="row"><div class="grow"><b>${bn(doneN)}/${bn(list.length)}</b> <span class="muted">টাস্ক শেষ</span></div><b style="color:var(--green)">${bn(pct)}%</b></div>
+      <div class="progress"><i style="width:${pct}%"></i></div>
+      ${ds!==today()?`<button class="btn g sm" style="margin-top:10px" onclick="S.date=today();render()">আজকে ফিরে যান</button>`:""}
+      ${a?`<label>কার টাস্ক দেখবেন</label><select onchange="S.filter=this.value;render()"><option value="all">সবাই</option>${sortedPeople().map(p=>`<option value="${p.id}" ${S.filter===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select>`:""}
+    </div>
+    ${!list.length?`<div class="card empty">${a?"এই দিনে কোনো টাস্ক নেই। নিচের <b>+ টাস্ক দিন</b> চেপে টাস্ক যোগ করুন।":"এই দিনে আপনার কোনো টাস্ক নেই 🎉"}</div>`:""}
+    ${groups.map(g=>`<div class="card group" style="margin-top:0">
+      <div class="ghead">${avatar(g.p)}<div class="grow"><h3>${esc(g.p.name)}</h3><div class="muted">${bn(g.items.filter(t=>doneRec(t.id,ds)).length)}/${bn(g.items.length)} শেষ</div></div></div>
+      ${g.items.map(t=>taskRow(t,ds)).join("")}
+    </div>`).join("")}`;
+}
+function taskRow(t, ds){
+  const d = doneRec(t.id, ds), can = canTick(t) && ds <= today(), a=isAdmin();
+  const by = d ? person(d.by) : null;
+  const when = d ? new Date(d.at).toLocaleTimeString("bn-BD",{hour:"numeric",minute:"2-digit"}) : "";
+  const sched = t.type==="weekly" ? (t.wd||[]).map(i=>WD[i]).join(", ") : t.type==="monthly" ? `প্রতি মাসের ${bn(t.md)} তারিখ` : t.type==="once" ? nice(t.date) : "";
+  return `<div class="task ${d?"done":""}">
+    <button class="chk" ${can?"":"disabled"} title="${ds>today()?"আগামী দিনের টাস্ক এখন টিক দেওয়া যাবে না":""}" onclick="toggle('${t.id}','${ds}')">${d?"✓":""}</button>
+    <div class="grow">
+      <div class="tt">${esc(t.title)}${t.assigneeId===me().id&&newTasks().some(x=>x.id===t.id)?`<span class="newtag">নতুন</span>`:""}</div>
+      <div style="margin-top:3px"><span class="badge b-${t.type}">${TYPE[t.type]}</span><span class="muted">${esc(sched)}</span></div>
+      ${t.note?`<div class="muted" style="margin-top:4px;white-space:pre-wrap">${esc(t.note)}</div>`:""}
+      ${d?`<div class="muted" style="margin-top:4px;color:var(--green)">✓ ${esc(by?.name||"")} — ${when}</div>`:""}
+    </div>
+    ${a?`<div class="tactions"><button title="এডিট" onclick="openTask('${t.id}')">✏️</button></div>`:""}
+  </div>`;
+}
+async function toggle(tid, ds){
+  const t = Store.data.tasks.find(x=>x.id===tid); if(!t||!canTick(t)) return;
+  if (ds > today()) return toast("আগামী দিনের টাস্ক আগে টিক দেওয়া যাবে না");
+  const id = tid+"_"+ds;
+  if (doneRec(tid,ds)) await Store.remove("done", id);
+  else { await Store.set("done", id, {taskId:tid, date:ds, by:me().id, at:Date.now()}); toast("দারুণ! টাস্ক শেষ ✓"); }
+}
+
+/* ---- task modal (admin) ---- */
+let F = null;
+function openTask(id){
+  if(!isAdmin()) return;
+  const t = id ? Store.data.tasks.find(x=>x.id===id) : null;
+  const members = sortedPeople();
+  F = t ? JSON.parse(JSON.stringify(t)) : {title:"", note:"", assigneeId:(S.filter!=="all"?S.filter:(members.find(p=>p.role!=="admin")||members[0]).id), type:"daily", wd:[parse(S.date).getDay()], md:parse(S.date).getDate(), date:S.date, start:today()};
+  if(!F.wd) F.wd=[parse(S.date).getDay()]; if(!F.md) F.md=parse(S.date).getDate(); if(!F.date) F.date=S.date;
+  const m = document.createElement("div"); m.className="modal"; m.id="modal";
+  m.onclick = e => { if(e.target===m) closeModal(); };
+  m.innerHTML = `<div class="sheet">
+    <div class="row"><h2 class="grow" style="margin:0">${t?"টাস্ক এডিট":"নতুন টাস্ক দিন"}</h2><button class="icon" onclick="closeModal()">✕</button></div>
+    <label>টাস্কের নাম</label><input id="fTitle" value="${esc(F.title)}" placeholder="যেমন: সব নতুন লিডকে কল করা">
+    <label>বিস্তারিত (ঐচ্ছিক)</label><textarea id="fNote" placeholder="কীভাবে করতে হবে, কোনো নির্দেশনা…">${esc(F.note||"")}</textarea>
+    <label>কাকে দিচ্ছেন</label><select id="fWho">${members.map(p=>`<option value="${p.id}" ${F.assigneeId===p.id?"selected":""}>${esc(p.name)}${p.role==="admin"?" (Admin)":""}</option>`).join("")}</select>
+    <label>কত দিন পর পর</label>
+    <div class="seg" id="fType">${Object.keys(TYPE).map(k=>`<button type="button" data-k="${k}" class="${F.type===k?"on":""}">${TYPE[k]}</button>`).join("")}</div>
+    <div id="fSched"></div>
+    <div class="err" id="fErr"></div>
+    <div class="row" style="margin-top:6px">
+      ${t?`<button class="btn r" onclick="delTask('${t.id}')">মুছুন</button>`:""}
+      <div class="grow"></div>
+      <button class="btn g" onclick="closeModal()">বাতিল</button>
+      <button class="btn o" onclick="saveTask()">${t?"সেভ করুন":"টাস্ক দিন"}</button>
+    </div></div>`;
+  document.body.appendChild(m);
+  m.querySelectorAll("#fType button").forEach(b=>b.onclick=()=>{ F.type=b.dataset.k; m.querySelectorAll("#fType button").forEach(x=>x.classList.toggle("on",x===b)); schedUI(); });
+  schedUI(); setTimeout(()=>$("#fTitle")?.focus(),50);
+}
+function schedUI(){
+  const el=$("#fSched");
+  if(F.type==="daily") el.innerHTML=`<label>কবে থেকে শুরু</label><input type="date" id="fStart" value="${F.start||today()}">`;
+  if(F.type==="weekly") el.innerHTML=`<label>সপ্তাহের কোন দিন (একাধিক বাছাই করা যাবে)</label><div class="days">${WD.map((w,i)=>`<button type="button" data-i="${i}" class="${F.wd.includes(i)?"on":""}">${w}</button>`).join("")}</div><label>কবে থেকে শুরু</label><input type="date" id="fStart" value="${F.start||today()}">`;
+  if(F.type==="monthly") el.innerHTML=`<label>মাসের কোন তারিখে</label><select id="fMd">${Array.from({length:31},(_,i)=>`<option value="${i+1}" ${F.md===i+1?"selected":""}>${bn(i+1)} তারিখ</option>`).join("")}</select><div class="muted" style="margin-top:4px">২৯–৩১ বাছলে ছোট মাসে মাসের শেষ দিনে দেখাবে।</div><label>কবে থেকে শুরু</label><input type="date" id="fStart" value="${F.start||today()}">`;
+  if(F.type==="once") el.innerHTML=`<label>কোন তারিখে</label><input type="date" id="fDate" value="${F.date}">`;
+  el.querySelectorAll(".days button").forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; F.wd=F.wd.includes(i)?F.wd.filter(x=>x!==i):[...F.wd,i].sort(); b.classList.toggle("on"); });
+}
+async function saveTask(){
+  F.title=$("#fTitle").value.trim(); F.note=$("#fNote").value.trim(); F.assigneeId=$("#fWho").value;
+  if($("#fStart")) F.start=$("#fStart").value||today();
+  if($("#fMd")) F.md=+$("#fMd").value;
+  if($("#fDate")) F.date=$("#fDate").value;
+  if(!F.title) return $("#fErr").textContent="টাস্কের নাম লিখুন";
+  if(F.type==="weekly"&&!F.wd.length) return $("#fErr").textContent="অন্তত একটা দিন বাছাই করুন";
+  if(F.type==="once"&&!F.date) return $("#fErr").textContent="তারিখ বাছাই করুন";
+  const id = F.id || uid();
+  const obj = {title:F.title, note:F.note, assigneeId:F.assigneeId, assignerId:F.assignerId||me().id, type:F.type,
+    wd:F.type==="weekly"?F.wd:[], md:F.type==="monthly"?F.md:null, date:F.type==="once"?F.date:null,
+    start:F.type==="once"?F.date:F.start, created:F.created||Date.now()};
+  await Store.set("tasks", id, obj);
+  const wasEdit=!!F.id; closeModal(); toast(wasEdit?"সেভ হয়েছে":"টাস্ক দেওয়া হয়েছে ✓");
+  if(!wasEdit && obj.assigneeId!==me().id) showSent({id,...obj});
+}
+function showSent(t){
+  const p=person(t.assigneeId), link=waLink(p,t);
+  const m=document.createElement("div"); m.className="modal"; m.id="modal"; m.onclick=e=>{if(e.target===m) closeModal();};
+  m.innerHTML=`<div class="sheet" style="text-align:center">
+    <div style="font-size:42px">✅</div><h2>টাস্ক দেওয়া হয়েছে</h2>
+    <p class="muted"><b>${esc(p?.name||"")}</b> অ্যাপ খুললেই নতুন টাস্কের নোটিফিকেশন দেখবে।${link?" WhatsApp-এও জানিয়ে দিতে পারেন:":""}</p>
+    ${link?`<a class="btn wa" style="width:100%;margin-top:14px;padding:13px" href="${link}" target="_blank" rel="noopener" onclick="setTimeout(closeModal,300)">WhatsApp-এ জানান</a>`
+      :`<p class="muted" style="margin-top:10px">WhatsApp-এ জানাতে টিম ট্যাবে ${esc(p?.name||"মেম্বার")}-এর ফোন নম্বর যোগ করুন।</p>`}
+    <button class="btn g" style="width:100%;margin-top:8px" onclick="closeModal()">ঠিক আছে</button></div>`;
+  document.body.appendChild(m);
+}
+let delArm=null;
+async function delTask(id){
+  if(delArm!==id){ delArm=id; $("#fErr").textContent="নিশ্চিত? মুছতে আবার \"মুছুন\" চাপুন (রিপোর্ট থেকেও সরে যাবে)"; return; }
+  delArm=null;
+  await Store.remove("tasks", id);
+  for(const d of Store.data.done.filter(d=>d.taskId===id)) await Store.remove("done", d.id);
+  closeModal(); toast("টাস্ক মুছে ফেলা হয়েছে");
+}
+function closeModal(){ $("#modal")?.remove(); F=null; delArm=null; render(); }
+
+/* ---- report ---- */
+function repRange(){
+  const a = parse(S.repAnchor);
+  if(S.repMode==="week"){ const s=new Date(a); s.setDate(a.getDate()-a.getDay()); return Array.from({length:7},(_,i)=>{const d=new Date(s); d.setDate(s.getDate()+i); return ymd(d);}); }
+  const n = new Date(a.getFullYear(), a.getMonth()+1, 0).getDate();
+  return Array.from({length:n},(_,i)=>ymd(new Date(a.getFullYear(), a.getMonth(), i+1)));
+}
+function viewReport(){
+  const a=isAdmin(), days=repRange(), td=today();
+  const who = a ? S.repPerson : me().id;
+  let tasks = Store.data.tasks.filter(t=>days.some(d=>occurs(t,d)));
+  if(who!=="all") tasks = tasks.filter(t=>t.assigneeId===who);
+  tasks.sort((x,y)=> (person(x.assigneeId)?.name||"").localeCompare(person(y.assigneeId)?.name||"") || x.title.localeCompare(y.title));
+  const per = {}; let tot=0, ok=0, miss=0;
+  tasks.forEach(t=>days.forEach(d=>{ if(!occurs(t,d)||d>td) return; const k=t.assigneeId; per[k]=per[k]||{tot:0,ok:0}; per[k].tot++; tot++; if(doneRec(t.id,d)){per[k].ok++; ok++;} else if(d<td) miss++; }));
+  const pct = tot?Math.round(ok*100/tot):0;
+  const first=parse(days[0]), last=parse(days[days.length-1]);
+  const title = S.repMode==="week" ? `${bn(first.getDate())} ${MON[first.getMonth()]} – ${bn(last.getDate())} ${MON[last.getMonth()]}` : `${MON[first.getMonth()]} ${bn(first.getFullYear())}`;
+  $("#view").innerHTML = `
+    <div class="card">
+      <div class="seg" style="margin-bottom:12px"><button class="${S.repMode==="week"?"on":""}" onclick="S.repMode='week';render()">সাপ্তাহিক</button><button class="${S.repMode==="month"?"on":""}" onclick="S.repMode='month';render()">মাসিক</button></div>
+      <div class="datebar"><button class="icon" onclick="shiftRep(-1)">‹</button><div class="d"><b>${title}</b></div><button class="icon" onclick="shiftRep(1)">›</button></div>
+      ${a?`<select onchange="S.repPerson=this.value;render()"><option value="all">সবাই</option>${sortedPeople().map(p=>`<option value="${p.id}" ${S.repPerson===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select>`:""}
+    </div>
+    <div class="card"><div class="stats">
+      <div class="stat"><div><b style="color:var(--green)">${bn(pct)}%</b><div class="muted">সম্পন্নের হার</div></div></div>
+      <div class="stat"><div><b>${bn(ok)}</b><div class="muted">শেষ হয়েছে ✓</div></div></div>
+      <div class="stat"><div><b style="color:var(--red)">${bn(miss)}</b><div class="muted">মিস হয়েছে ✗</div></div></div>
+    </div>
+    ${a&&who==="all"?`<div style="margin-top:14px">${sortedPeople().filter(p=>per[p.id]).map(p=>{const r=per[p.id],q=Math.round(r.ok*100/r.tot);return `<div class="member">${avatar(p)}<div class="grow"><b>${esc(p.name)}</b><div class="progress"><i style="width:${q}%"></i></div></div><b>${bn(q)}%</b><span class="muted">${bn(r.ok)}/${bn(r.tot)}</span></div>`}).join("")}</div>`:""}
+    </div>
+    <div class="card">
+      <div class="muted" style="margin-bottom:8px"><span class="c-ok">✓</span> শেষ &nbsp; <span class="c-miss">✗</span> মিস &nbsp; <span class="c-up">·</span> বাকি/সামনে</div>
+      ${!tasks.length?`<div class="empty">এই সময়ে কোনো টাস্ক নেই</div>`:`<div class="tablewrap"><table class="rep">
+        <tr><th class="name">টাস্ক</th>${days.map(d=>{const x=parse(d);return `<th class="${d===td?"today":""}">${S.repMode==="week"?WD[x.getDay()]+"<br>":""}${bn(x.getDate())}</th>`}).join("")}<th>%</th></tr>
+        ${tasks.map(t=>{ let tt=0,oo=0; const cells=days.map(d=>{ if(!occurs(t,d)) return `<td class="c-na">–</td>`; const dn=doneRec(t.id,d);
+            if(d<=td){tt++; if(dn) oo++;}
+            if(dn) return `<td class="c-ok">✓</td>`; if(d<td) return `<td class="c-miss">✗</td>`; return `<td class="c-up">·</td>`; }).join("");
+          return `<tr><td class="name"><b>${esc(t.title)}</b><div class="muted">${esc(person(t.assigneeId)?.name||"")} · ${TYPE[t.type]}</div></td>${cells}<td><b>${tt?bn(Math.round(oo*100/tt))+"%":"–"}</b></td></tr>`; }).join("")}
+      </table></div>`}
+    </div>`;
+}
+function shiftRep(n){ const a=parse(S.repAnchor); if(S.repMode==="week") a.setDate(a.getDate()+7*n); else { a.setDate(1); a.setMonth(a.getMonth()+n); } S.repAnchor=ymd(a); render(); }
+
+/* ---- team (admin) ---- */
+function viewTeam(){
+  $("#view").innerHTML = `<div class="card">
+    <div class="row"><h2 class="grow" style="margin:0">টিম</h2><button class="btn o sm" onclick="openPerson()">+ মেম্বার যোগ করুন</button></div>
+    <p class="muted" style="margin:6px 0 4px">মেম্বাররা নিজের নাম বেছে PIN দিয়ে ঢুকবে। তারা শুধু নিজের টাস্ক দেখবে ও টিক দেবে।</p>
+    ${sortedPeople().map(p=>{ const n=Store.data.tasks.filter(t=>t.assigneeId===p.id).length; return `<div class="member">${avatar(p)}
+      <div class="grow"><b>${esc(p.name)}</b> <span class="role ${p.role==="admin"?"":"m"}">${p.role==="admin"?"Admin":"মেম্বার"}</span><div class="muted">${esc(p.des||"")} · ${bn(n)}টি টাস্ক</div></div>
+      <button class="btn g sm" onclick="openPerson('${p.id}')">এডিট</button></div>`; }).join("")}
+  </div>`;
+}
+let P=null, pDelArm=false;
+function openPerson(id){
+  const p = id ? person(id) : null; P = p ? {...p} : {name:"",des:"",role:"member"}; pDelArm=false;
+  const self = p && p.id===me().id;
+  const m=document.createElement("div"); m.className="modal"; m.id="modal"; m.onclick=e=>{if(e.target===m) closeModal();};
+  m.innerHTML=`<div class="sheet">
+    <div class="row"><h2 class="grow" style="margin:0">${p?"মেম্বার এডিট":"নতুন মেম্বার"}</h2><button class="icon" onclick="closeModal()">✕</button></div>
+    <div class="row" style="margin-top:12px"><div id="pAv">${avatar(P)}</div><label class="btn g sm" style="margin:0">ছবি দিন<input type="file" accept="image/*" style="display:none" onchange="pickPhoto(this)"></label>${P.photo?`<button class="btn g sm" onclick="P.photo=null;$('#pAv').innerHTML=avatar(P)">ছবি সরান</button>`:""}</div>
+    <label>নাম</label><input id="pName" value="${esc(P.name)}">
+    <label>পদবি</label><input id="pDes" value="${esc(P.des||"")}" placeholder="যেমন: Counsellor">
+    <label>WhatsApp নম্বর (ঐচ্ছিক)</label><input id="pPhone" inputmode="tel" value="${esc(P.phone||"")}" placeholder="যেমন: 01717-900035">
+    <label>ভূমিকা</label><select id="pRole" ${self?"disabled":""}><option value="member" ${P.role!=="admin"?"selected":""}>মেম্বার — শুধু নিজের টাস্ক দেখবে</option><option value="admin" ${P.role==="admin"?"selected":""}>Admin — টাস্ক দিতে পারবে</option></select>
+    <label>${p?"নতুন PIN (বদলাতে না চাইলে খালি রাখুন)":"৪ সংখ্যার PIN"}</label><input id="pPin" class="pin" inputmode="numeric" maxlength="4" type="password">
+    <div class="err" id="pErr"></div>
+    <div class="row">${p&&!self?`<button class="btn r" onclick="delPerson('${p.id}')">মুছুন</button>`:""}<div class="grow"></div><button class="btn g" onclick="closeModal()">বাতিল</button><button class="btn o" onclick="savePerson()">সেভ করুন</button></div>
+  </div>`;
+  document.body.appendChild(m);
+}
+function pickPhoto(inp){
+  const f=inp.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ const img=new Image(); img.onload=()=>{ const c=document.createElement("canvas"); c.width=c.height=128; const s=Math.min(img.width,img.height);
+    c.getContext("2d").drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,128,128); P.photo=c.toDataURL("image/jpeg",.8); $("#pAv").innerHTML=avatar(P); }; img.src=r.result; };
+  r.readAsDataURL(f);
+}
+async function savePerson(){
+  const name=$("#pName").value.trim(), des=$("#pDes").value.trim(), pin=$("#pPin").value.trim();
+  const role = $("#pRole").disabled ? P.role : $("#pRole").value;
+  if(!name) return $("#pErr").textContent="নাম লিখুন";
+  if((!P.id||pin) && !/^\d{4}$/.test(pin)) return $("#pErr").textContent="PIN ৪ সংখ্যার হতে হবে";
+  const id=P.id||uid();
+  const phone=$("#pPhone").value.trim();
+  const obj={name,des,role,phone,photo:P.photo||null,seenAt:P.seenAt||Date.now(),pin:pin?await hashPin(pin,id):P.pin,created:P.created||Date.now()};
+  await Store.set("people", id, obj); closeModal(); toast("সেভ হয়েছে");
+}
+async function delPerson(id){
+  const n=Store.data.tasks.filter(t=>t.assigneeId===id).length;
+  if(!pDelArm){ pDelArm=true; $("#pErr").textContent=`নিশ্চিত? এই মেম্বারের ${bn(n)}টি টাস্কও মুছে যাবে। আবার "মুছুন" চাপুন।`; return; }
+  for(const t of Store.data.tasks.filter(t=>t.assigneeId===id)){ await Store.remove("tasks",t.id); for(const d of Store.data.done.filter(d=>d.taskId===t.id)) await Store.remove("done",d.id); }
+  await Store.remove("people", id); closeModal(); toast("মেম্বার মুছে ফেলা হয়েছে");
+}
+
+/* ---- refresh date at midnight ---- */
+let lastDay=today();
+setInterval(()=>{ if(today()!==lastDay){ if(S.date===lastDay) S.date=today(); lastDay=today(); if(!$("#modal")) render(); } }, 60000);
+
+Store.init(()=>{ checkAlerts(); if(!$("#modal")) render(); });
+</script>
+</body>
+</html>
