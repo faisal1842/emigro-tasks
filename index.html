@@ -97,6 +97,7 @@ textarea{resize:vertical;min-height:60px}
 .b-monthly{background:#F1EAFE;color:#6D28D9}
 .b-once{background:#EEF2F9;color:var(--navy)}
 .tactions{display:flex;gap:4px;margin-left:auto}
+.tactions a.wa-ic{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:#E3F7EA;text-decoration:none;font-size:15px}
 .tactions button{border:0;background:#F3F6FC;border-radius:8px;width:32px;height:32px;font-size:14px}
 .empty{text-align:center;padding:30px 10px;color:var(--muted)}
 
@@ -396,7 +397,7 @@ function taskRow(t, ds){
       ${t.note?`<div class="muted" style="margin-top:4px;white-space:pre-wrap">${esc(t.note)}</div>`:""}
       ${d?`<div class="muted" style="margin-top:4px;color:var(--green)">✓ ${esc(by?.name||"")} — ${when}</div>`:""}
     </div>
-    ${a?`<div class="tactions"><button title="এডিট" onclick="openTask('${t.id}')">✏️</button></div>`:""}
+    ${a?`<div class="tactions">${t.assigneeId!==me().id&&waLink(person(t.assigneeId),t)?`<a class="wa-ic" href="${waLink(person(t.assigneeId),t)}" target="_blank" rel="noopener" title="WhatsApp-এ জানান">💬</a>`:""}<button title="এডিট" onclick="openTask('${t.id}')">✏️</button></div>`:""}
   </div>`;
 }
 async function toggle(tid, ds){
