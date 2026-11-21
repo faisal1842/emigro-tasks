@@ -28,7 +28,7 @@ header{background:#fff;color:var(--text);border-bottom:3px solid var(--orange);b
 .logo::after{content:"";position:absolute;right:5px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--orange)}
 .brand b{font-size:16px;display:block;line-height:1.1;color:var(--navy)}
 .logoimg{height:38px;width:auto;display:block}
-.bt{border-left:2px solid var(--line);padding-left:10px}
+.bt{border-left:2px solid var(--line);padding-left:10px;white-space:nowrap}
 .lbrand{text-align:center;margin:-4px 0 14px}
 .lbrand img{height:64px;width:auto;max-width:100%}
 .lbrand div{font-weight:700;color:var(--navy);font-size:15px;margin-top:2px}
@@ -103,6 +103,9 @@ textarea{resize:vertical;min-height:60px}
 .b-once{background:#EEF2F9;color:var(--navy)}
 .tactions{display:flex;gap:4px;margin-left:auto}
 .tactions a.wa-ic{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:#E3F7EA;text-decoration:none;font-size:15px}
+.chkline{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--text);margin-top:14px}
+.chkline input{width:18px;height:18px;margin-top:3px;flex:none}
+.tactions .give{width:auto!important;height:32px!important;padding:0 12px;background:var(--orange)!important;color:#fff;font-weight:600;white-space:nowrap}
 .tactions button{border:0;background:#F3F6FC;border-radius:8px;width:32px;height:32px;font-size:14px}
 .empty{text-align:center;padding:30px 10px;color:var(--muted)}
 
@@ -209,9 +212,9 @@ function occurs(t, ds){
 }
 
 /* ---------------- data store (Firebase or demo) ---------------- */
-const COLS = ["people","tasks","done"];
+const COLS = ["people","tasks","done","templates"];
 const Store = {
-  data:{people:[],tasks:[],done:[]}, loaded:0, demo:false, db:null,
+  data:{people:[],tasks:[],done:[],templates:[]}, loaded:0, demo:false, db:null,
   init(onChange){
     this.onChange = onChange;
     if (FIREBASE_CONFIG && FIREBASE_CONFIG.projectId) {
@@ -293,7 +296,7 @@ function render(){
   if (!Store.data.people.length) return renderSetup();
   if (!me()) return renderLogin();
   const a = isAdmin();
-  if (!a && S.tab === "team") S.tab = "today";
+  if (!a && (S.tab === "team" || S.tab === "library")) S.tab = "today";
   app.innerHTML = `
     <header><div class="hrow">
       <div class="brand">${logoImg("logoimg")}<div class="bt"><b>Team Tasks</b></div></div>
@@ -301,13 +304,14 @@ function render(){
     </div></header>
     ${Store.demo?`<div class="demo">ডেমো মোড — ডেটা শুধু এই ব্রাউজারে সেভ হচ্ছে। Firebase যুক্ত করলে সবার কাছে দেখাবে।</div>`:""}
     <main id="view"></main>
-    ${a?`<button class="fab" onclick="openTask()">+ টাস্ক দিন</button>`:""}
+    ${a&&(S.tab==="today"||S.tab==="report")?`<button class="fab" onclick="openTask()">+ টাস্ক দিন</button>`:""}
     <nav>
       <button class="${S.tab==="today"?"on":""}" onclick="go('today')"><span>📋${newTasks().length?`<em>${bn(newTasks().length)}</em>`:""}</span>টাস্ক</button>
       <button class="${S.tab==="report"?"on":""}" onclick="go('report')"><span>📊</span>রিপোর্ট</button>
+      ${a?`<button class="${S.tab==="library"?"on":""}" onclick="go('library')"><span>📚</span>লাইব্রেরি</button>`:""}
       ${a?`<button class="${S.tab==="team"?"on":""}" onclick="go('team')"><span>👥</span>টিম</button>`:""}
     </nav>`;
-  ({today:viewToday, report:viewReport, team:viewTeam})[S.tab]();
+  ({today:viewToday, report:viewReport, library:viewLibrary, team:viewTeam})[S.tab]();
 }
 function go(t){ S.tab=t; render(); window.scrollTo(0,0); }
 
@@ -416,57 +420,105 @@ async function toggle(tid, ds){
 }
 
 /* ---- task modal (admin) ---- */
-let F = null;
-function openTask(id){
+let F = null, FM = "task";
+const tplSched = t => t.type==="weekly" ? "প্রতি "+(t.wd||[]).map(i=>WDF[i]).join(", ") : t.type==="monthly" ? `প্রতি মাসের ${bn(t.md)} তারিখ` : t.type==="once" ? "একবার — তারিখ দেওয়ার সময় ঠিক করবেন" : "প্রতিদিন";
+function openTask(id, opts={}){
   if(!isAdmin()) return;
-  const t = id ? Store.data.tasks.find(x=>x.id===id) : null;
+  FM = opts.mode || "task";
+  const isT = FM==="tpl";
+  const src = id ? (isT ? Store.data.templates : Store.data.tasks).find(x=>x.id===id) : null;
+  const from = opts.from ? Store.data.templates.find(x=>x.id===opts.from) : null;
   const members = sortedPeople();
-  F = t ? JSON.parse(JSON.stringify(t)) : {title:"", note:"", assigneeId:(S.filter!=="all"?S.filter:(members.find(p=>p.role!=="admin")||members[0]).id), type:"daily", wd:[parse(S.date).getDay()], md:parse(S.date).getDate(), date:S.date, start:today()};
-  if(!F.wd) F.wd=[parse(S.date).getDay()]; if(!F.md) F.md=parse(S.date).getDate(); if(!F.date) F.date=S.date;
+  const defWho = opts.who || (S.filter!=="all"?S.filter:(members.find(p=>p.role!=="admin")||members[0]).id);
+  F = src ? JSON.parse(JSON.stringify(src)) : {title:"", note:"", assigneeId:defWho, type:"daily", wd:[parse(S.date).getDay()], md:parse(S.date).getDate(), date:S.date, start:today()};
+  if(from) Object.assign(F, {title:from.title, note:from.note||"", type:from.type, wd:[...(from.wd||[])], md:from.md, templateId:from.id});
+  if(!F.wd||!F.wd.length&&F.type!=="weekly") F.wd=[parse(S.date).getDay()]; if(!F.md) F.md=parse(S.date).getDate(); if(!F.date) F.date=S.date; if(!F.start) F.start=today();
+  const tpls = [...Store.data.templates].sort((a,b)=>Object.keys(TYPE).indexOf(a.type)-Object.keys(TYPE).indexOf(b.type)||a.title.localeCompare(b.title));
+  const head = isT ? (src?"লাইব্রেরির টাস্ক এডিট":"লাইব্রেরিতে টাস্ক যোগ") : (src?"টাস্ক এডিট":from?"লাইব্রেরি থেকে টাস্ক দিন":"নতুন টাস্ক দিন");
   const m = document.createElement("div"); m.className="modal"; m.id="modal";
   m.onclick = e => { if(e.target===m) closeModal(); };
   m.innerHTML = `<div class="sheet">
-    <div class="row"><h2 class="grow" style="margin:0">${t?"টাস্ক এডিট":"নতুন টাস্ক দিন"}</h2><button class="icon" onclick="closeModal()">✕</button></div>
+    <div class="row"><h2 class="grow" style="margin:0">${head}</h2><button class="icon" onclick="closeModal()">✕</button></div>
+    ${!isT&&!src&&tpls.length?`<label>📚 লাইব্রেরি থেকে বাছুন</label><select id="fPick" onchange="pickTpl(this.value)"><option value="">— নতুন করে লিখুন —</option>${tpls.map(t=>`<option value="${t.id}" ${from&&from.id===t.id?"selected":""}>[${TYPE[t.type]}] ${esc(t.title)}</option>`).join("")}</select>`:""}
     <label>টাস্কের নাম</label><input id="fTitle" value="${esc(F.title)}" placeholder="যেমন: সব নতুন লিডকে কল করা">
     <label>বিস্তারিত (ঐচ্ছিক)</label><textarea id="fNote" placeholder="কীভাবে করতে হবে, কোনো নির্দেশনা…">${esc(F.note||"")}</textarea>
-    <label>কাকে দিচ্ছেন</label><select id="fWho">${members.map(p=>`<option value="${p.id}" ${F.assigneeId===p.id?"selected":""}>${esc(p.name)}${p.role==="admin"?" (Admin)":""}</option>`).join("")}</select>
+    ${isT?"":`<label>কাকে দিচ্ছেন</label><select id="fWho">${members.map(p=>`<option value="${p.id}" ${F.assigneeId===p.id?"selected":""}>${esc(p.name)}${p.role==="admin"?" (Admin)":""}</option>`).join("")}</select>`}
     <label>কত দিন পর পর</label>
     <div class="seg" id="fType">${Object.keys(TYPE).map(k=>`<button type="button" data-k="${k}" class="${F.type===k?"on":""}">${TYPE[k]}</button>`).join("")}</div>
     <div id="fSched"></div>
+    ${!isT&&!src&&!from?`<label class="chkline"><input type="checkbox" id="fLib"> লাইব্রেরিতেও সেভ করে রাখুন (পরে আবার দেওয়া যাবে)</label>`:""}
     <div class="err" id="fErr"></div>
     <div class="row" style="margin-top:6px">
-      ${t?`<button class="btn r" onclick="delTask('${t.id}')">মুছুন</button>`:""}
+      ${src?`<button class="btn r" onclick="${isT?"delTpl":"delTask"}('${src.id}')">মুছুন</button>`:""}
       <div class="grow"></div>
       <button class="btn g" onclick="closeModal()">বাতিল</button>
-      <button class="btn o" onclick="saveTask()">${t?"সেভ করুন":"টাস্ক দিন"}</button>
+      <button class="btn o" onclick="saveTask()">${src||isT?"সেভ করুন":"টাস্ক দিন"}</button>
     </div></div>`;
   document.body.appendChild(m);
   m.querySelectorAll("#fType button").forEach(b=>b.onclick=()=>{ F.type=b.dataset.k; m.querySelectorAll("#fType button").forEach(x=>x.classList.toggle("on",x===b)); schedUI(); });
-  schedUI(); setTimeout(()=>$("#fTitle")?.focus(),50);
+  schedUI(); if(!from) setTimeout(()=>$("#fTitle")?.focus(),50);
+}
+function pickTpl(tid){
+  const who=$("#fWho")?.value; $("#modal")?.remove(); F=null;
+  openTask(null, tid?{from:tid, who}:{who});
 }
 function schedUI(){
-  const el=$("#fSched");
-  if(F.type==="daily") el.innerHTML=`<label>কবে থেকে শুরু</label><input type="date" id="fStart" value="${F.start||today()}">`;
-  if(F.type==="weekly") el.innerHTML=`<label>সপ্তাহের কোন দিন (একাধিক বাছাই করা যাবে)</label><div class="days">${WD.map((w,i)=>`<button type="button" data-i="${i}" class="${F.wd.includes(i)?"on":""}">${w}</button>`).join("")}</div><label>কবে থেকে শুরু</label><input type="date" id="fStart" value="${F.start||today()}">`;
-  if(F.type==="monthly") el.innerHTML=`<label>মাসের কোন তারিখে</label><select id="fMd">${Array.from({length:31},(_,i)=>`<option value="${i+1}" ${F.md===i+1?"selected":""}>${bn(i+1)} তারিখ</option>`).join("")}</select><div class="muted" style="margin-top:4px">২৯–৩১ বাছলে ছোট মাসে মাসের শেষ দিনে দেখাবে।</div><label>কবে থেকে শুরু</label><input type="date" id="fStart" value="${F.start||today()}">`;
-  if(F.type==="once") el.innerHTML=`<label>কোন তারিখে</label><input type="date" id="fDate" value="${F.date}">`;
+  const el=$("#fSched"), isT=FM==="tpl";
+  const start = isT ? "" : `<label>কবে থেকে শুরু</label><input type="date" id="fStart" value="${F.start||today()}">`;
+  if(F.type==="daily") el.innerHTML=start;
+  if(F.type==="weekly") el.innerHTML=`<label>সপ্তাহের কোন দিন (একাধিক বাছাই করা যাবে)</label><div class="days">${WD.map((w,i)=>`<button type="button" data-i="${i}" class="${F.wd.includes(i)?"on":""}">${w}</button>`).join("")}</div>${start}`;
+  if(F.type==="monthly") el.innerHTML=`<label>মাসের কোন তারিখে</label><select id="fMd">${Array.from({length:31},(_,i)=>`<option value="${i+1}" ${F.md===i+1?"selected":""}>${bn(i+1)} তারিখ</option>`).join("")}</select><div class="muted" style="margin-top:4px">২৯–৩১ বাছলে ছোট মাসে মাসের শেষ দিনে দেখাবে।</div>${start}`;
+  if(F.type==="once") el.innerHTML = isT ? `<div class="muted" style="margin-top:8px">তারিখটা টাস্ক দেওয়ার সময় বাছবেন।</div>` : `<label>কোন তারিখে</label><input type="date" id="fDate" value="${F.date}">`;
   el.querySelectorAll(".days button").forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; F.wd=F.wd.includes(i)?F.wd.filter(x=>x!==i):[...F.wd,i].sort(); b.classList.toggle("on"); });
 }
 async function saveTask(){
-  F.title=$("#fTitle").value.trim(); F.note=$("#fNote").value.trim(); F.assigneeId=$("#fWho").value;
+  const isT = FM==="tpl";
+  F.title=$("#fTitle").value.trim(); F.note=$("#fNote").value.trim();
+  if(!isT) F.assigneeId=$("#fWho").value;
   if($("#fStart")) F.start=$("#fStart").value||today();
   if($("#fMd")) F.md=+$("#fMd").value;
   if($("#fDate")) F.date=$("#fDate").value;
   if(!F.title) return $("#fErr").textContent="টাস্কের নাম লিখুন";
   if(F.type==="weekly"&&!F.wd.length) return $("#fErr").textContent="অন্তত একটা দিন বাছাই করুন";
-  if(F.type==="once"&&!F.date) return $("#fErr").textContent="তারিখ বাছাই করুন";
+  if(!isT&&F.type==="once"&&!F.date) return $("#fErr").textContent="তারিখ বাছাই করুন";
+  const tplObj = () => ({title:F.title, note:F.note, type:F.type, wd:F.type==="weekly"?F.wd:[], md:F.type==="monthly"?F.md:null, created:F.created||Date.now()});
+  if(isT){
+    const was=!!F.id; await Store.set("templates", F.id||uid(), tplObj());
+    closeModal(); toast(was?"সেভ হয়েছে":"লাইব্রেরিতে যোগ হয়েছে ✓"); return;
+  }
   const id = F.id || uid();
+  let templateId = F.templateId || null;
+  if($("#fLib")?.checked){ templateId = uid(); await Store.set("templates", templateId, {...tplObj(), created:Date.now()}); }
   const obj = {title:F.title, note:F.note, assigneeId:F.assigneeId, assignerId:F.assignerId||me().id, type:F.type,
     wd:F.type==="weekly"?F.wd:[], md:F.type==="monthly"?F.md:null, date:F.type==="once"?F.date:null,
-    start:F.type==="once"?F.date:F.start, created:F.created||Date.now()};
+    start:F.type==="once"?F.date:F.start, created:F.created||Date.now(), templateId};
   await Store.set("tasks", id, obj);
   const wasEdit=!!F.id; closeModal(); toast(wasEdit?"সেভ হয়েছে":"টাস্ক দেওয়া হয়েছে ✓");
   if(!wasEdit && obj.assigneeId!==me().id) showSent({id,...obj});
+}
+let tDelArm=null;
+async function delTpl(id){
+  if(tDelArm!==id){ tDelArm=id; $("#fErr").textContent="নিশ্চিত? লাইব্রেরি থেকে মুছতে আবার \"মুছুন\" চাপুন। যাদের দেওয়া আছে, তাদের টাস্ক থেকে যাবে।"; return; }
+  tDelArm=null; await Store.remove("templates", id); closeModal(); toast("লাইব্রেরি থেকে মুছে ফেলা হয়েছে");
+}
+function viewLibrary(){
+  const tp = Store.data.templates;
+  $("#view").innerHTML = `<div class="card">
+      <div class="row"><h2 class="grow" style="margin:0">টাস্ক লাইব্রেরি</h2><button class="btn o sm" onclick="openTask(null,{mode:'tpl'})">+ টাস্ক যোগ করুন</button></div>
+      <p class="muted" style="margin-top:6px">নিয়মিত কাজগুলো এখানে আগে থেকে লিখে রাখুন। দরকারের সময় <b>দিন →</b> চেপে যেকোনো মেম্বারকে দিয়ে দিন।</p>
+    </div>
+    ${!tp.length?`<div class="card empty">লাইব্রেরি এখনো খালি। উপরের <b>+ টাস্ক যোগ করুন</b> চেপে শুরু করুন।</div>`:""}
+    ${Object.keys(TYPE).map(g=>{ const items=tp.filter(t=>t.type===g).sort((a,b)=>a.title.localeCompare(b.title)); if(!items.length) return "";
+      return `<div class="card"><h3 style="margin-bottom:10px"><span class="badge b-${g}">${TYPE[g]}</span> <span class="muted">${bn(items.length)}টি</span></h3>
+      ${items.map(t=>{ const names=[...new Set(Store.data.tasks.filter(x=>x.templateId===t.id).map(x=>person(x.assigneeId)?.name).filter(Boolean))];
+        return `<div class="task"><div class="grow">
+          <div class="tt">${esc(t.title)}</div>
+          <div class="muted">${esc(tplSched(t))}</div>
+          ${t.note?`<div class="muted" style="white-space:pre-wrap;margin-top:3px">${esc(t.note)}</div>`:""}
+          <div class="muted" style="margin-top:4px;${names.length?"color:var(--green)":""}">${names.length?"✓ দেওয়া আছে: "+names.map(esc).join(", "):"এখনো কাউকে দেওয়া হয়নি"}</div>
+        </div>
+        <div class="tactions"><button class="btn o sm give" onclick="openTask(null,{from:'${t.id}'})">দিন →</button><button title="এডিট" onclick="openTask('${t.id}',{mode:'tpl'})">✏️</button></div></div>`; }).join("")}
+      </div>`; }).join("")}`;
 }
 function showSent(t){
   const p=person(t.assigneeId), link=waLink(p,t);
