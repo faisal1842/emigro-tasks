@@ -194,10 +194,16 @@ async function hashPin(pin, salt){
   return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
+/* ---------------- ছুটি: শুক্রবার + সরকারি ছুটি ---------------- */
+const OFF_WEEKDAYS = [5]; // ৫ = শুক্রবার
+const HOLIDAYS = {"2026-12-16":"বিজয় দিবস","2026-12-25":"বড়দিন","2026-12-26":"সরকারি ছুটি"};
+const offReason = ds => HOLIDAYS[ds] || (OFF_WEEKDAYS.includes(parse(ds).getDay()) ? "সাপ্তাহিক ছুটি (শুক্রবার)" : "");
+
 /* ---------------- does a task fall on a date? ---------------- */
 function occurs(t, ds){
   if (t.start && ds < t.start) return false;
   if (t.end && ds > t.end) return false;
+  if (t.type !== "once" && offReason(ds)) return false;
   const d = parse(ds);
   switch (t.type) {
     case "daily":   return true;
@@ -386,6 +392,7 @@ function viewToday(){
       </div>
       <div class="row"><div class="grow"><b>${bn(doneN)}/${bn(list.length)}</b> <span class="muted">টাস্ক শেষ</span></div><b style="color:var(--green)">${bn(pct)}%</b></div>
       <div class="progress"><i style="width:${pct}%"></i></div>
+      ${offReason(ds)?`<div class="muted" style="margin-top:8px;color:var(--orange);font-weight:600">🌙 ${offReason(ds)} — এই দিনে নিয়মিত টাস্ক থাকে না</div>`:""}
       ${ds!==today()?`<button class="btn g sm" style="margin-top:10px" onclick="S.date=today();render()">আজকে ফিরে যান</button>`:""}
       ${a?`<label>কার টাস্ক দেখবেন</label><select onchange="S.filter=this.value;render()"><option value="all">সবাই</option>${sortedPeople().map(p=>`<option value="${p.id}" ${S.filter===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select>`:""}
     </div>
@@ -575,7 +582,7 @@ function viewReport(){
     <div class="card">
       <div class="muted" style="margin-bottom:8px"><span class="c-ok">✓</span> শেষ &nbsp; <span class="c-miss">✗</span> মিস &nbsp; <span class="c-up">·</span> বাকি/সামনে</div>
       ${!tasks.length?`<div class="empty">এই সময়ে কোনো টাস্ক নেই</div>`:`<div class="tablewrap"><table class="rep">
-        <tr><th class="name">টাস্ক</th>${days.map(d=>{const x=parse(d);return `<th class="${d===td?"today":""}">${S.repMode==="week"?WD[x.getDay()]+"<br>":""}${bn(x.getDate())}</th>`}).join("")}<th>%</th></tr>
+        <tr><th class="name">টাস্ক</th>${days.map(d=>{const x=parse(d);return `<th class="${d===td?"today":""}" style="${offReason(d)?"color:#C9D2E3":""}" title="${offReason(d)}">${S.repMode==="week"?WD[x.getDay()]+"<br>":""}${bn(x.getDate())}</th>`}).join("")}<th>%</th></tr>
         ${tasks.map(t=>{ let tt=0,oo=0; const cells=days.map(d=>{ if(!occurs(t,d)) return `<td class="c-na">–</td>`; const dn=doneRec(t.id,d);
             if(d<=td){tt++; if(dn) oo++;}
             if(dn) return `<td class="c-ok">✓</td>`; if(d<td) return `<td class="c-miss">✗</td>`; return `<td class="c-up">·</td>`; }).join("");
